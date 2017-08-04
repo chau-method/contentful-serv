@@ -1,0 +1,12 @@
+{
+  "name": "mcd-contentful-serv",
+  "version": "0.0.1",
+  "description": "contentful express server for mcd data",
+  "main": "index.js",
+  "author": "Chau Nguyen",
+  "license": "MIT",
+  "devDependencies": {
+    "contentful": "^4.5.0",
+    "express": "^4.15.3"
+  }
+}
