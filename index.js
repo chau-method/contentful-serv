@@ -1,17 +1,13 @@
 const express = require('express');
 const contentful = require('contentful');
-// const path = require('path');
-// const bodyParser = require('body-parser');
 const api = require('./api');
+var fs = require('fs')
 
 const SPACE_ID = process.env.API_SPACE_ID || api.SPACE_ID;
 const ACCESS_TOKEN = process.env.API_ACCESS_TOKEN || api.ACCESS_TOKEN;
 
 const client = contentful.createClient({
-  // This is the space ID. A space is like a project folder in Contentful terms
   space: SPACE_ID,
-  // This is the access token for this space.
-  // Normally you get both ID and the token in the Contentful web app
   accessToken: ACCESS_TOKEN,
 });
 
@@ -22,6 +18,23 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
 });
+
+// saveData();
+
+/**
+ * Saves the category data
+ *
+*/
+function saveData() {
+  client.getEntries({
+    content_type: 'wrapperForCategories',
+    include: 6
+  })
+  .then((data) => {
+    formatData(data, false, 'categories');
+  })
+  .catch((error) => { console.error(error); });
+}
 
 /**
  * Formats the data of the parent loop
@@ -62,7 +75,14 @@ function formatData(data, res, loopField) {
     return obj;
   }, {});
 
-  res.json(finalObj);
+  if (res) {
+    res.json(finalObj);
+  }
+
+  fs.writeFile('./data/categories.json', JSON.stringify(finalObj), 'utf-8', function(err) {
+    if (err) throw err
+    console.log('Categories: Saved!')
+  });
 }
 
 /**
@@ -107,14 +127,49 @@ function stripData(data, res) {
       delete item.fields.configurable;
       item.fields.configurable = tempHolder;
     }
+
+    if (item.fields.criteriaSize) {
+      const criteriaObj = {
+        size: item.fields.criteriaSize,
+        side: item.fields.criteriaSide
+      }
+
+      delete item.fields.criteriaSize;
+      delete item.fields.criteriaSide;
+
+      item.fields.criteria = criteriaObj
+    }
+
+    if (item.fields.itemAnchor) {
+      const itemObj = {
+        anchor: item.fields.itemAnchor,
+        side: item.fields.itemSide,
+        drink: item.fields.itemDrink,
+        toy: item.fields.itemToy || false
+      }
+
+      delete item.fields.itemAnchor;
+      delete item.fields.itemSide;
+      delete item.fields.itemDrink;
+      delete item.fields.itemToy;
+
+      item.fields.items = itemObj;
+    }
   });
 
-  res.json(dataArray)
+  if (res) {
+    res.json(dataArray)
+  }
+
+  fs.writeFile('./data/data.json', JSON.stringify(dataArray), 'utf-8', function(err) {
+    if (err) throw err
+    console.log('Done!')
+  });
 }
 
 /**
  * Formats the configurable object
- * @param  {object} itemObj     Configurable Object coming in 
+ * @param  {object} itemObj     Configurable Object coming in
  */
 function createConfigurable(itemObj) {
   const configArray = [];
@@ -239,6 +294,16 @@ app.get('/api/products', (req, res) => {
 app.get('/api/deals', (req, res) => {
   client.getEntries({
     content_type: 'deal',
+  })
+  .then((data) => {
+    stripData(data, res);
+  })
+  .catch((error) => { console.error(error); });
+});
+
+app.get('/api/meals', (req, res) => {
+  client.getEntries({
+    content_type: 'meal',
   })
   .then((data) => {
     stripData(data, res);
