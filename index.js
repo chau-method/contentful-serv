@@ -62,6 +62,7 @@ function formatData(data, res, loopField) {
 
         createNextViewObj(tileObj);
         flattenNestedProducts(tileObj);
+        trimSpecialRequestsAndIngredients(tileObj);
 
         tileArray.push(tileObj);
       });
@@ -79,10 +80,10 @@ function formatData(data, res, loopField) {
     res.json(finalObj);
   }
 
-  fs.writeFile('./data/categories.json', JSON.stringify(finalObj), 'utf-8', function(err) {
-    if (err) throw err
-    console.log('Categories: Saved!')
-  });
+  // fs.writeFile('./data/categories.json', JSON.stringify(finalObj), 'utf-8', function(err) {
+  //   if (err) throw err
+  //   console.log('Categories: Saved!')
+  // });
 }
 
 /**
@@ -161,10 +162,10 @@ function stripData(data, res) {
     res.json(dataArray)
   }
 
-  fs.writeFile('./data/data.json', JSON.stringify(dataArray), 'utf-8', function(err) {
-    if (err) throw err
-    console.log('Done!')
-  });
+  // fs.writeFile('./data/data.json', JSON.stringify(dataArray), 'utf-8', function(err) {
+  //   if (err) throw err
+  //   console.log('Done!')
+  // });
 }
 
 /**
@@ -226,7 +227,8 @@ function createNextViewObj(tileObj) {
     tileObj.nextView.currentView = tileObj.currentView
     delete tileObj.currentCategory;
     delete tileObj.currentView;
-
+  } else {
+    delete tileObj.nextView;
   }
 }
 
@@ -255,6 +257,26 @@ function stripSystem(obj) {
     const temp = obj.subcats.fields.subcats;
     delete obj.subcats;
     obj.subcats = temp;
+  }
+}
+
+function trimSpecialRequestsAndIngredients(tileObj) {
+  if (tileObj.product.specialRequestHolder) {
+    const temp = tileObj.product.specialRequestHolder.fields.specialRequests;
+    delete tileObj.product.specialRequestHolder;
+    tileObj.product.specialRequests = temp;
+  }
+
+  if (tileObj.product && tileObj.product.ingredientHolder) {
+    const ingredientArray = [];
+    tileObj.product.ingredientHolder.map((ingredient) => {
+      if (ingredient.fields) {
+        const temp = ingredient.fields;
+        ingredientArray.push(temp);
+      }
+    });
+    delete tileObj.product.ingredientHolder;
+    tileObj.product.ingredients = ingredientArray;
   }
 }
 
@@ -331,11 +353,11 @@ app.get('/api/ingredients', (req, res) => {
   .catch((error) => { console.error(error); });
 });
 
-app.get('/api/categories/:id', (req, res) => {
+app.get('/api/:locale/categories/', (req, res) => {
   client.getEntries({
     content_type: 'wrapperForCategories',
     include: 6,
-    locale: req.params.id
+    locale: req.params.locale
   })
   .then((data) => {
     formatData(data, res, 'categories');
@@ -358,8 +380,7 @@ app.get('/api/product/:id', (req, res) => {
 app.get('/api/product/type/:id', (req, res) => {
   client.getEntries({
     content_type: 'product',
-    'fields.parentRef': req.params.id,
-    locale: 'fr'
+    'fields.parentRef': req.params.id
   })
   .then((data) => {
     stripData(data, res);
