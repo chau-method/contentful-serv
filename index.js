@@ -62,7 +62,7 @@ function formatData(data, res, loopField) {
 
         createNextViewObj(tileObj);
         flattenNestedProducts(tileObj);
-        trimSpecialRequestsAndIngredients(tileObj);
+        trimSpecialRequestsAndIngredients(tileObj.product);
 
         tileArray.push(tileObj);
       });
@@ -96,6 +96,7 @@ function stripData(data, res) {
   const dataArray = [];
   data.items.map((item) => {
     dataArray.push(item.fields);
+    trimSpecialRequestsAndIngredients(item.fields);
 
     if (item.fields.product) {
       const temp = item.fields.product.fields
@@ -155,6 +156,89 @@ function stripData(data, res) {
       delete item.fields.itemToy;
 
       item.fields.items = itemObj;
+    }
+
+    Object.keys(item.fields).map((key) => {
+      if(item.fields[key].fields) {
+        Object.keys(item.fields[key].fields).map((innerKey) => {
+          if (key === 'choiceLoop' && innerKey === 'label') {
+            const labelObj = {}
+            item.fields['choiceLoop'].fields['label'].map((label) => {
+              delete label.fields.contentTitle;
+              const tempLabel = label.fields;
+              labelObj[`"${label.fields.id}"`] = tempLabel;
+            });
+            delete item.fields.choiceLoop.fields.label;
+            item.fields.choiceLoop.fields.label = labelObj
+          } else if (item.fields[key].fields[innerKey].fields) {
+            const tempInner = item.fields[key].fields[innerKey].fields;
+            delete item.fields[key].fields[innerKey];
+            item.fields[key].fields[innerKey] = tempInner;
+            delete item.fields[key].fields[innerKey].contentTitle;
+          };
+        });
+
+        const temp = item.fields[key].fields;
+        delete item.fields[key];
+        item.fields[key] = temp;
+      };
+    });
+
+    if (item.fields.reviewCardModify) {
+      const tempObj = {};
+      tempObj.modify = item.fields.reviewCardModify;
+      tempObj.makeMeal = item.fields.reviewCardMakeMeal;
+      delete item.fields.reviewCardModify;
+      delete item.fields.reviewCardMakeMeal;
+      item.fields.reviewCard = tempObj;
+    }
+
+    if (item.fields.paymentStaticImage) {
+      item.fields.payment = {
+        staticImage: item.fields.paymentStaticImage
+      };
+      delete item.fields.paymentStaticImage;
+    }
+
+    if (item.fields.pushoutStaticImage) {
+      item.fields.pushOut = {
+        staticImage: item.fields.pushoutStaticImage
+      };
+      delete item.fields.pushoutStaticImage;
+    }
+
+    if (item.fields.bogoExpiration) {
+      item.fields.bogo = {
+        expiration: item.fields.bogoExpiration
+      }
+      delete item.fields.bogoExpiration;
+    }
+
+    if (item.fields.categoryLanding && item.fields.categoryLanding.subcats) {
+      const changeArray = ['coldDrinks', 'hotDrinks', 'bottledDrinks'];
+      const changeTo = ['"Cold Drinks"', '"Hot Drinks"', '"Bottled Drinks"'];
+
+      changeArray.map((key, index) => {
+        const valueHolder = item.fields.categoryLanding.subcats[key];
+        delete item.fields.categoryLanding.subcats[key];
+        item.fields.categoryLanding.subcats[changeTo[index]] = valueHolder;
+      });
+    }
+
+    if (item.fields.grillScreen) {
+      const changeArray = ['cutInHalf', 'toastedBun'];
+      const changeTo = ['"Cut In Half"', '"Toasted Bun"'];
+
+      changeArray.map((key, index) => {
+        const valueHolder = item.fields.grillScreen[key];
+        delete item.fields.grillScreen[key];
+        item.fields.grillScreen[changeTo[index]] = valueHolder;
+      });
+    }
+
+    if (item.fields.general && item.fields.general.saladDressing) {
+      item.fields.general['"Salad Dressing"'] = item.fields.general.saladDressing;
+      delete item.fields.general.saladDressing;
     }
   });
 
@@ -260,23 +344,27 @@ function stripSystem(obj) {
   }
 }
 
-function trimSpecialRequestsAndIngredients(tileObj) {
-  if (tileObj.product.specialRequestHolder) {
-    const temp = tileObj.product.specialRequestHolder.fields.specialRequests;
-    delete tileObj.product.specialRequestHolder;
-    tileObj.product.specialRequests = temp;
+/**
+ * Trims the special and requests
+ * @param  {object} item   the item object product/tile
+ */
+function trimSpecialRequestsAndIngredients(item) {
+  if (item.specialRequestHolder) {
+    const temp = item.specialRequestHolder.fields.specialRequests;
+    delete item.specialRequestHolder;
+    item.specialRequests = temp;
   }
 
-  if (tileObj.product && tileObj.product.ingredientHolder) {
+  if (item.ingredientHolder) {
     const ingredientArray = [];
-    tileObj.product.ingredientHolder.map((ingredient) => {
+    item.ingredientHolder.map((ingredient) => {
       if (ingredient.fields) {
         const temp = ingredient.fields;
         ingredientArray.push(temp);
       }
     });
-    delete tileObj.product.ingredientHolder;
-    tileObj.product.ingredients = ingredientArray;
+    delete item.ingredientHolder;
+    item.ingredients = ingredientArray;
   }
 }
 
@@ -302,10 +390,9 @@ app.get('/api/cards', (req, res) => {
   .catch((error) => { console.error(error); });
 });
 
-app.get('/api/products', (req, res) => {
+app.get('/api/deals', (req, res) => {
   client.getEntries({
-    content_type: 'product',
-    include: 6,
+    content_type: 'deal',
   })
   .then((data) => {
     stripData(data, res);
@@ -313,9 +400,10 @@ app.get('/api/products', (req, res) => {
   .catch((error) => { console.error(error); });
 });
 
-app.get('/api/deals', (req, res) => {
+app.get('/api/products', (req, res) => {
   client.getEntries({
-    content_type: 'deal',
+    content_type: 'product',
+    include: 6,
   })
   .then((data) => {
     stripData(data, res);
@@ -353,14 +441,50 @@ app.get('/api/ingredients', (req, res) => {
   .catch((error) => { console.error(error); });
 });
 
-app.get('/api/:locale/categories/', (req, res) => {
+app.get(['/api/languages', '/api/:locale/languages'], (req, res) => {
+  client.getEntries({
+    content_type: 'language',
+    include: 10,
+    'fields.localeId': req.params.locale || 'us',
+  }).then((data) => {
+    stripData(data, res);
+  })
+  .catch((error) => {console.error(error); });
+});
+
+app.get(['/api/:locale/categories', '/api/:locale/categories/:lang'], (req, res) => {
   client.getEntries({
     content_type: 'wrapperForCategories',
     include: 6,
-    locale: req.params.locale
+    locale: req.params.lang || '',
+    'fields.localeId': req.params.locale,
   })
   .then((data) => {
     formatData(data, res, 'categories');
+  })
+  .catch((error) => { console.error(error); });
+});
+
+app.get('/api/:lang/products', (req, res) => {
+  client.getEntries({
+    content_type: 'product',
+    include: 6,
+    locale: req.params.lang,
+  })
+  .then((data) => {
+    stripData(data, res);
+  })
+  .catch((error) => { console.error(error); });
+});
+
+app.get('/api/:lang/meals', (req, res) => {
+  client.getEntries({
+    content_type: 'meal',
+    include: 2,
+    locale: req.params.lang,
+  })
+  .then((data) => {
+    stripData(data, res);
   })
   .catch((error) => { console.error(error); });
 });
