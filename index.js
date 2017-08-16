@@ -452,6 +452,17 @@ app.get(['/api/languages', '/api/:locale/languages'], (req, res) => {
   .catch((error) => {console.error(error); });
 });
 
+app.get(['/api/pullinview', '/api/:locale/pullinview'], (req, res) => {
+  client.getEntries({
+    content_type: 'pullInView',
+    include: 2,
+    'fields.localeId': req.params.locale || 'us',
+  }).then((data) => {
+    stripData(data, res);
+  })
+  .catch((error) => {console.error(error); });
+});
+
 app.get(['/api/:locale/categories', '/api/:locale/categories/:lang'], (req, res) => {
   client.getEntries({
     content_type: 'wrapperForCategories',
