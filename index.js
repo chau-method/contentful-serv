@@ -166,7 +166,11 @@ function stripData(data, res) {
             item.fields['choiceLoop'].fields['label'].map((label) => {
               delete label.fields.contentTitle;
               const tempLabel = label.fields;
-              labelObj[`"${label.fields.id}"`] = tempLabel;
+              if (['Cold Drinks', 'Hot Drinks', 'Bottled Drinks'].indexOf(label.fields.id) !== -1) {
+                labelObj[`'${label.fields.id}'`] = tempLabel;
+              } else {
+                labelObj[`${label.fields.id}`] = tempLabel;
+              }
             });
             delete item.fields.choiceLoop.fields.label;
             item.fields.choiceLoop.fields.label = labelObj
