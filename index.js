@@ -19,21 +19,57 @@ app.use((req, res, next) => {
   next();
 });
 
-// saveData();
+saveData('us', 'en-US');
 
 /**
  * Saves the category data
  *
 */
-function saveData() {
+function saveData(locale, lang) {
+  this.saveCategories = true;
+  this.productFixture = [];
+
   client.getEntries({
     content_type: 'wrapperForCategories',
-    include: 6
+    include: 10,
+    'fields.localeId': locale || 'us',
   })
   .then((data) => {
     formatData(data, false, 'categories');
   })
   .catch((error) => { console.error(error); });
+
+  client.getEntries({
+    content_type: 'language',
+    include: 10,
+    'fields.localeId': locale || 'us',
+  })
+  .then((data) => {
+    stripData(data, false, 'language');
+  })
+  .catch((error) => { console.error(error); });
+
+  client.getEntries({
+    content_type: 'meal',
+    include: 2,
+    locale: lang || 'en-US',
+  })
+  .then((data) => {
+    stripData(data, false, 'product');
+  })
+  .catch((error) => { console.error(error); });
+
+
+  client.getEntries({
+    content_type: 'product',
+    include: 6,
+    locale: lang || 'en-US',
+  })
+  .then((data) => {
+    stripData(data, false, 'product');
+  })
+  .catch((error) => { console.error(error); });
+
 }
 
 /**
@@ -76,14 +112,17 @@ function formatData(data, res, loopField) {
     return obj;
   }, {});
 
+  if (this.saveCategories) {
+    fs.writeFile('./data/categories.json', JSON.stringify(finalObj), 'utf-8', function(err) {
+      if (err) throw err
+      console.log('Categories: Saved!')
+      this.saveCategories = false;
+    });
+  }
+
   if (res) {
     res.json(finalObj);
   }
-
-  // fs.writeFile('./data/categories.json', JSON.stringify(finalObj), 'utf-8', function(err) {
-  //   if (err) throw err
-  //   console.log('Categories: Saved!')
-  // });
 }
 
 /**
@@ -92,7 +131,7 @@ function formatData(data, res, loopField) {
  * @param  {Object} res     response object from express
 
  */
-function stripData(data, res) {
+function stripData(data, res, pipe) {
   const dataArray = [];
   data.items.map((item) => {
     dataArray.push(item.fields);
@@ -246,14 +285,31 @@ function stripData(data, res) {
     }
   });
 
-  if (res) {
-    res.json(dataArray)
+  if (pipe === 'product') {
+    if (productFixture.length < 1) {
+      productFixture.push(dataArray);
+    } else {
+      productFixture.push(dataArray);
+      fs.writeFile('./data/products.json', JSON.stringify(dataArray), 'utf-8', function(err) {
+        if (err) throw err
+        console.log('Products: Saved!')
+        this.saveProducts = false;
+      });
+    }
   }
 
-  // fs.writeFile('./data/data.json', JSON.stringify(dataArray), 'utf-8', function(err) {
-  //   if (err) throw err
-  //   console.log('Done!')
-  // });
+  if (pipe === 'language') {
+    fs.writeFile('./data/language.json', JSON.stringify(dataArray[0]), 'utf-8', function(err) {
+      if (err) throw err
+      console.log('Language: Saved!')
+      this.saveLanguage = false;
+      this.saveProducts = true;
+    });
+  }
+
+  if (res) {
+    res.json(dataArray)
+  };
 }
 
 /**
