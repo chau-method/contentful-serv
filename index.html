@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>API</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <h1> API Routes </h1>
+    <div class="route-container">
+      <div class="route-holder">
+        <a target="_blank" href="/api/cards/en-US"> /api/cards/:lang </a>
+        <p class="params"> lang <span>(optional)</span> </p>
+        <p class="return"> Returns an Array </p>
+        <p class="description"> Grabs all the cards/tiles. Returns cards that can be promo, title, deals, products. Takes an optional <span class="optional">lang</span> param that is used to target langauge translations</p>
+      </div>
+
+      <div class="route-holder">
+        <a target="_blank" href="/api/products/en-US"> /api/products/:lang </a>
+        <p class="params"> lang <span>(optional)</span> </p>
+        <p class="return"> Returns an Array </p>
+        <p class="description"> Returns all the products. Takes an optional <span class="optional">lang</span> param that is used to target langauge translations.</p>
+      </div>
+
+      <div class="route-holder">
+        <a target="_blank" href="api/group/product/sandwich/en-US"> /api/group/product/:id/:lang </a>
+        <p class="params"> id <span class="required">(required)</span> lang <span>(optional)</span> </p>
+        <p class="return"> Returns an Array </p>
+        <p class="description"> Returns all the products with the matching parentRef <span class="required">id</span>. Takes an optional <span class="optional">lang</span> param that is used to target langauge translations.</p>
+      </div>
+
+      <div class="route-holder">
+        <a target="_blank" href="api/type/ingredient/en-US"> /api/type/:type/:lang </a>
+        <p class="params"> type <span class="required">(required)</span> lang <span>(optional)</span> </p>
+        <p class="return"> Returns an Array </p>
+        <p class="description"> Returns all of the content type of whatever is in the <span class="required">type</span> param. Takes an optional <span class="optional">lang</span> param that is used to target langauge translations.</p>
+      </div>
+
+      <div class="route-holder">
+        <a target="_blank" href="/api/single/product/quarterpounderwcheese/fr"> /api/single/:type/:id/:lang </a>
+        <p class="params"> type <span class="required">(required)</span> id <span class="required">(required)</span> lang <span>(optional)</span> </p>
+        <p class="return"> Returns an Array </p>
+        <p class="description"> Returns an array with a single object of <span class="required">type</span> param with the matching <span class="required">id</span>. Takes an optional <span class="optional">lang</span> param that is used to target langauge translations.</p>
+      </div>
+
+      <div class="route-holder">
+        <a target="_blank" href="/api/us/languages"> /api/:locale/languages </a>
+        <p class="params"> locale <span>(optional)</span> </p>
+        <p class="return"> Returns an Array </p>
+        <p class="description">Returns an array with all the copy laid out in key value pairs. Takes an optional <span class="optional">locale</span> param that is used to target the specific language. Defaults to English.</p>
+      </div>
+
+      <div class="route-holder">
+        <a target="_blank" href="/api/us/pullinview"> /api/:locale/pullinview </a>
+        <p class="params"> locale <span>(optional)</span> </p>
+        <p class="return"> Returns an Array </p>
+        <p class="description">Returns the key value pairs for the copy on the pull in view. This has it's own api call to update the state on kiosk without pulling down the entire language object. Takes an optional <span class="optional">locale</span> param that is used to target the specific language's layout. Defaults to English.</p>
+      </div>
+
+      <div class="route-holder">
+        <a target="_blank" href="/api/us/categories/fr"> /api/:locale/categories/:lang </a>
+        <p class="params"> locale <span>(optional)</span> lang <span>(optional)</span> </p>
+        <p class="return"> Returns an Array </p>
+        <p class="description"> Returns an array of the categories used on the category landing view. Contains cards and products displayed on the category landing view after you select from the left hand nav. Takes an optional <span class="optional">locale</span> param that is used to target the specific language's layout and navigation items. Takes an optional <span class="optional">lang</span> param that is used to target the specific language translations. Both default to English.</p>
+      </div>
+    </div>
+  </body>
+</html>

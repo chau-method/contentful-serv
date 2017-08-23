@@ -19,6 +19,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.static('public'));
+
 saveData('us', 'en-US');
 
 /**
@@ -428,20 +430,10 @@ function trimSpecialRequestsAndIngredients(item) {
   }
 }
 
-app.get('/api/categories', (req, res) => {
-  client.getEntries({
-    content_type: 'wrapperForCategories',
-    include: 6
-  })
-  .then((data) => {
-    formatData(data, res, 'categories');
-  })
-  .catch((error) => { console.error(error); });
-});
-
-app.get('/api/cards', (req, res) => {
+app.get(['/api/cards', '/api/cards/:lang'], (req, res) => {
   client.getEntries({
     content_type: 'card',
+    locale: req.params.lang || '',
     include: 6
   })
   .then((data) => {
@@ -450,19 +442,10 @@ app.get('/api/cards', (req, res) => {
   .catch((error) => { console.error(error); });
 });
 
-app.get('/api/deals', (req, res) => {
-  client.getEntries({
-    content_type: 'deal',
-  })
-  .then((data) => {
-    stripData(data, res);
-  })
-  .catch((error) => { console.error(error); });
-});
-
-app.get('/api/products', (req, res) => {
+app.get(['/api/products', '/api/products/:lang'], (req, res) => {
   client.getEntries({
     content_type: 'product',
+    locale: req.params.lang || '',
     include: 6,
   })
   .then((data) => {
@@ -471,9 +454,11 @@ app.get('/api/products', (req, res) => {
   .catch((error) => { console.error(error); });
 });
 
-app.get('/api/meals', (req, res) => {
+app.get(['/api/group/product/:id', '/api/group/product/:id/:lang'], (req, res) => {
   client.getEntries({
-    content_type: 'meal',
+    content_type: 'product',
+    locale: req.params.lang || '',
+    'fields.parentRef': req.params.id
   })
   .then((data) => {
     stripData(data, res);
@@ -481,9 +466,10 @@ app.get('/api/meals', (req, res) => {
   .catch((error) => { console.error(error); });
 });
 
-app.get('/api/promos', (req, res) => {
+app.get(['/api/type/:type', '/api/type/:type/:lang'], (req, res) => {
   client.getEntries({
-    content_type: 'promo',
+    content_type: req.params.type,
+    locale: req.params.lang || '',
   })
   .then((data) => {
     stripData(data, res);
@@ -491,9 +477,12 @@ app.get('/api/promos', (req, res) => {
   .catch((error) => { console.error(error); });
 });
 
-app.get('/api/ingredients', (req, res) => {
+app.get(['/api/single/:type/:id', '/api/single/:type/:id/:lang'], (req, res) => {
   client.getEntries({
-    content_type: 'ingredient',
+    content_type: req.params.type,
+    include: 3,
+    locale: req.params.lang || '',
+    'fields.id': req.params.id,
   })
   .then((data) => {
     stripData(data, res);
@@ -523,12 +512,12 @@ app.get(['/api/pullinview', '/api/:locale/pullinview'], (req, res) => {
   .catch((error) => {console.error(error); });
 });
 
-app.get(['/api/:locale/categories', '/api/:locale/categories/:lang'], (req, res) => {
+app.get(['/api/categories', '/api/:locale/categories', '/api/:locale/categories/:lang'], (req, res) => {
   client.getEntries({
     content_type: 'wrapperForCategories',
     include: 6,
     locale: req.params.lang || '',
-    'fields.localeId': req.params.locale,
+    'fields.localeId': req.params.locale || 'us',
   })
   .then((data) => {
     formatData(data, res, 'categories');
@@ -536,73 +525,8 @@ app.get(['/api/:locale/categories', '/api/:locale/categories/:lang'], (req, res)
   .catch((error) => { console.error(error); });
 });
 
-app.get('/api/:lang/products', (req, res) => {
-  client.getEntries({
-    content_type: 'product',
-    include: 6,
-    locale: req.params.lang,
-  })
-  .then((data) => {
-    stripData(data, res);
-  })
-  .catch((error) => { console.error(error); });
-});
-
-app.get('/api/:lang/meals', (req, res) => {
-  client.getEntries({
-    content_type: 'meal',
-    include: 2,
-    locale: req.params.lang,
-  })
-  .then((data) => {
-    stripData(data, res);
-  })
-  .catch((error) => { console.error(error); });
-});
-
-
-app.get('/api/product/:id', (req, res) => {
-  client.getEntries({
-    content_type: 'product',
-    'fields.id': req.params.id,
-  })
-  .then((data) => {
-    res.json(data);
-  })
-  .catch((error) => { console.error(error); });
-});
-
-app.get('/api/product/type/:id', (req, res) => {
-  client.getEntries({
-    content_type: 'product',
-    'fields.parentRef': req.params.id
-  })
-  .then((data) => {
-    stripData(data, res);
-  })
-  .catch((error) => { console.error(error); });
-});
-
-app.get('/api/deal/:id', (req, res) => {
-  client.getEntries({
-    content_type: 'deal',
-    'fields.id': req.params.id,
-  })
-  .then((data) => {
-    res.json(data);
-  })
-  .catch((error) => { console.error(error); });
-});
-
-app.get('/api/promo/:id', (req, res) => {
-  client.getEntries({
-    content_type: 'promo',
-    'fields.id': req.params.id,
-  })
-  .then((data) => {
-    res.json(data);
-  })
-  .catch((error) => { console.error(error); });
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
 });
 
 const PORT = process.env.PORT || 8000;
